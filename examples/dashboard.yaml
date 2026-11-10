@@ -1,0 +1,14 @@
+# Einstellungen → Dashboards → Dashboard hinzufügen → (neues Dashboard öffnen) → ⋮ → Roh-Konfigurationseditor
+title: Heizung
+views:
+  - title: Heizung
+    path: heizung
+    icon: mdi:heat-pump
+    type: panel
+    cards:
+      - type: custom:heizung-schema-card
+        # Alles optional:
+        # side_width: 190              # Breite der Seitenspalten in Pixel
+        # center_background: "#181818" # Hintergrund des Schemas (Standard: Theme)
+        # entities:                    # abweichende Entitäten, Schlüssel siehe README
+        #   outdoor: sensor.boiler_outdoortemp
