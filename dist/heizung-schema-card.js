@@ -374,12 +374,18 @@ class HeizungSchemaCard extends HTMLElement {
         <path d="${defrost ? "M405 160 H235" : "M235 160 H405"}" class="${cls(compOn || defrost, "red")}"/>
         <path d="${defrost ? "M235 235 H405" : "M405 235 H235"}" class="${cls(compOn || defrost, "blue")}"/>
         <text x="320" y="187" text-anchor="middle" class="t-sub" font-size="12.5">Kältemittelkreis${defrost ? " (Umkehr)" : ""}</text>
-        <g class="click" data-entity="${e("tc3")}"><text x="320" y="206" text-anchor="middle" class="t-sub" font-size="14">Spreizung <tspan style="fill:var(--primary-text-color);font-weight:700">${spreadPrim}</tspan></text></g>
+        <g class="click" data-entity="${e("tc3")}"><text x="320" y="206" text-anchor="middle" class="t-sub" font-size="13">Spreizung TC3−TC0 <tspan style="fill:var(--primary-text-color);font-weight:700">${spreadPrim}</tspan></text></g>
         <g class="click" data-entity="${e("pc0flow_calc")}"><text x="320" y="226" text-anchor="middle" class="t-sub" font-size="14">Durchfluss <tspan style="fill:var(--primary-text-color);font-weight:700">${flowPrim}</tspan></text></g>
-        <text x="245" y="148" class="t-sub halo" font-size="13">TC3</text>
-        <g class="click" data-entity="${e("tc3")}"><text x="282" y="148" class="t-vl halo">${this._fmt("tc3")}</text></g>
-        <text x="245" y="262" class="t-sub halo" font-size="13">TC0</text>
-        <g class="click" data-entity="${e("tc0")}"><text x="282" y="262" class="t-rl halo">${this._fmt("tc0")}</text></g>
+        <!-- Seite Außeneinheit: TC3 (Kondensatorausgang) und TC0 – Grundlage der Spreizung -->
+        <text x="245" y="130" class="t-sub halo" font-size="12">TC3</text>
+        <g class="click" data-entity="${e("tc3")}"><text x="245" y="150" class="t-vl halo">${this._fmt("tc3")}</text></g>
+        <g class="click" data-entity="${e("tc0")}"><text x="245" y="258" class="t-rl halo">${this._fmt("tc0")}</text></g>
+        <text x="245" y="276" class="t-sub halo" font-size="12">TC0</text>
+        <!-- Seite Inneneinheit: TC1 (Vorlauf in der Inneneinheit) und TC0 -->
+        <text x="397" y="130" text-anchor="end" class="t-sub halo" font-size="12">TC1</text>
+        <g class="click" data-entity="${e("tc1")}"><text x="397" y="150" text-anchor="end" class="t-vl halo">${this._fmt("tc1")}</text></g>
+        <g class="click" data-entity="${e("tc0")}"><text x="397" y="258" text-anchor="end" class="t-rl halo">${this._fmt("tc0")}</text></g>
+        <text x="397" y="276" text-anchor="end" class="t-sub halo" font-size="12">TC0</text>
 
         <!-- Inneneinheit -->
         <rect x="405" y="95" width="155" height="190" rx="14" class="box"/>
