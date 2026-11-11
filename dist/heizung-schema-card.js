@@ -376,8 +376,8 @@ class HeizungSchemaCard extends HTMLElement {
         <text x="320" y="187" text-anchor="middle" class="t-sub" font-size="12.5">Kältemittelkreis${defrost ? " (Umkehr)" : ""}</text>
         <g class="click" data-entity="${e("tc3")}"><text x="320" y="206" text-anchor="middle" class="t-sub" font-size="14">Spreizung <tspan style="fill:var(--primary-text-color);font-weight:700">${spreadPrim}</tspan></text></g>
         <g class="click" data-entity="${e("pc0flow_calc")}"><text x="320" y="226" text-anchor="middle" class="t-sub" font-size="14">Durchfluss <tspan style="fill:var(--primary-text-color);font-weight:700">${flowPrim}</tspan></text></g>
-        <text x="245" y="148" class="t-sub halo" font-size="13">TC1</text>
-        <g class="click" data-entity="${e("tc1")}"><text x="282" y="148" class="t-vl halo">${this._fmt("tc1")}</text></g>
+        <text x="245" y="148" class="t-sub halo" font-size="13">TC3</text>
+        <g class="click" data-entity="${e("tc3")}"><text x="282" y="148" class="t-vl halo">${this._fmt("tc3")}</text></g>
         <text x="245" y="262" class="t-sub halo" font-size="13">TC0</text>
         <g class="click" data-entity="${e("tc0")}"><text x="282" y="262" class="t-rl halo">${this._fmt("tc0")}</text></g>
 
