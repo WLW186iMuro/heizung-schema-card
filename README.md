@@ -9,8 +9,6 @@ Anlagenschema im Stil des Bosch-HMI-800 für die Luft-Wasser-Wärmepumpe **Buder
 - Spreizung und Durchfluss von Primär- und Heizkreis, im Warmwasserbetrieb passend ausgeblendet
 - Farben folgen deinem Theme, ein Klick auf einen Wert öffnet die Entität
 
-> Screenshot hier einfügen (`docs/schema.png`).
-
 ## Installation
 
 1. Auf **Open in HACS** klicken. Alternativ: HACS → ⋮ → *Benutzerdefinierte Repositories* → diese Repository-URL, Kategorie **Dashboard**.
