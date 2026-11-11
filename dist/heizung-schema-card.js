@@ -2,7 +2,7 @@
  * Seitenspalten nutzen die Farben des HA-Themes (--ha-card-background).
  * Nutzung: type: custom:heizung-schema-card
  * Optional: entities: { flow: sensor.xyz, ... }, center_background: "#181818", side_width: 190
- * Primärkreis: Vorlauf = TC1, Rücklauf = TC0, Spreizung = TC1 − TC0.
+ * Primärkreis: Vorlauf = TC1, Rücklauf = TC0; Spreizung = TC3 − TC0 (so rechnet die WP, Soll = "Temp.diff. TC3/TC0 Heizen").
  * Heizkreis: Vorlauf = boiler_curflowtemp, Rücklauf = boiler_rettemp.
  * Im Warmwasserbetrieb ist der Heizkreis hydraulisch abgekoppelt: Heizkreis-Spreizung und -Durchfluss werden dann nicht angezeigt.
  *
@@ -186,9 +186,9 @@ class HeizungSchemaCard extends HTMLElement {
     const flowHK = dhwActive ? wwHint : this._fmt("flow_rate", 0, "L/h");
     const flowHKshort = dhwActive ? "–" : this._fmt("flow_rate", 0, "L/h");
     const spreadShort = dhwActive ? "–" : spreadRaw;
-    // Primärkreis-Spreizung: TC1 (Vorlauf) − TC0 (Rücklauf), wie im Heizungscard-Dashboard
-    const t1 = this._num("tc1"), t0 = this._num("tc0");
-    const spreadPrim = t1 !== null && t0 !== null ? (t1 - t0).toLocaleString("de-DE", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + " K" : "–";
+    // Primärkreis-Spreizung: TC3 (Kondensatorausgang) − TC0 (Rücklauf) – so rechnet die WP (Soll: Temp.diff. TC3/TC0 Heizen)
+    const t3 = this._num("tc3"), t0 = this._num("tc0");
+    const spreadPrim = t3 !== null && t0 !== null ? (t3 - t0).toLocaleString("de-DE", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + " K" : "–";
     const pc0 = this._num("pc0flow");
     const pcc = this._num("pc0flow_calc");
     const flowPrim = pc0 !== null && pc0 > 0 ? this._fmt("pc0flow", 0, "L/h")
@@ -241,7 +241,7 @@ class HeizungSchemaCard extends HTMLElement {
       this._row("mdi:thermometer-chevron-up", "Heizkreis Vorlauf", this._fmt("flow"), "flow", "#ef5350"),
       this._row("mdi:thermometer-chevron-down", "Heizkreis Rücklauf", this._fmt("ret"), "ret", "#42a5f5"),
       this._row("mdi:arrow-expand-vertical", "Spreizung Heizkreis (VL – RL)", spread, "flow", dhwActive ? "#9e9e9e" : "#ffa726"),
-      this._row("mdi:arrow-expand-vertical", "Spreizung Primärkreis (TC1–TC0)", spreadPrim, "tc1", "#ffa726"),
+      this._row("mdi:arrow-expand-vertical", "Spreizung Primärkreis (TC3–TC0)", spreadPrim, "tc3", "#ffa726"),
       this._row("mdi:water-sync", "Durchfluss Kältemittel", flowPrim, "pc0flow_calc", "#26c6da"),
       this._row("mdi:water-sync", "Durchfluss Heizwasser", flowHK, "flow_rate", dhwActive ? "#9e9e9e" : "#26c6da"),
       this._row("mdi:thermometer-lines", "HK1 Soll-Vorlauf", this._fmt("target_flow"), "target_flow", "#ef5350"),
@@ -374,7 +374,7 @@ class HeizungSchemaCard extends HTMLElement {
         <path d="${defrost ? "M405 160 H235" : "M235 160 H405"}" class="${cls(compOn || defrost, "red")}"/>
         <path d="${defrost ? "M235 235 H405" : "M405 235 H235"}" class="${cls(compOn || defrost, "blue")}"/>
         <text x="320" y="187" text-anchor="middle" class="t-sub" font-size="12.5">Kältemittelkreis${defrost ? " (Umkehr)" : ""}</text>
-        <g class="click" data-entity="${e("tc1")}"><text x="320" y="206" text-anchor="middle" class="t-sub" font-size="14">Spreizung <tspan style="fill:var(--primary-text-color);font-weight:700">${spreadPrim}</tspan></text></g>
+        <g class="click" data-entity="${e("tc3")}"><text x="320" y="206" text-anchor="middle" class="t-sub" font-size="14">Spreizung <tspan style="fill:var(--primary-text-color);font-weight:700">${spreadPrim}</tspan></text></g>
         <g class="click" data-entity="${e("pc0flow_calc")}"><text x="320" y="226" text-anchor="middle" class="t-sub" font-size="14">Durchfluss <tspan style="fill:var(--primary-text-color);font-weight:700">${flowPrim}</tspan></text></g>
         <text x="245" y="148" class="t-sub halo" font-size="13">TC1</text>
         <g class="click" data-entity="${e("tc1")}"><text x="282" y="148" class="t-vl halo">${this._fmt("tc1")}</text></g>
