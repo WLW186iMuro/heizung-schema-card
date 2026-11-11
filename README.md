@@ -61,19 +61,6 @@ Die Kennlinie der Primärkreispumpe wurde an einer WLW186i-7 mit TP70 ermittelt.
 
 **Optional, ohne Ersatz:** `icing` und `icing_status` (geschätzte Vereisung des Verdampfers; ohne Entität zeigt die Karte „Aus“) und `pv_status` (Status einer PV-Überschuss-Steuerung; ohne Entität ist das Feld ausgeblendet).
 
-### Frischer Messwert für den Primärkreis-Durchfluss (EMS-ESP 3.9-dev)
-
-Neuere Entwicklerversionen von EMS-ESP frieren `boiler_pc0flow` unter ca. 900 L/h auf dem letzten Wert ein. Dann hilft ein Helfer, der nur frische Werte durchlässt (*Einstellungen → Geräte & Dienste → Helfer → Template → Sensor*, Zustandsvorlage unten, Einheit `L/h`):
-
-```jinja
-{% set e = states.sensor.boiler_pc0flow %}
-{% set m = e.state | float(-1) if e is not none else -1 %}
-{% set alter = (now() - e.last_reported).total_seconds() if e is not none else 9999 %}
-{{ m if m > 0 and alter < 60 else none }}
-```
-
-Dann in der Karte `entities: { pc0flow: sensor.<name_des_helfers> }` eintragen.
-
 ## Datenschutz
 
 Die Karte liest nur Zustände aus deinem Home Assistant im Browser. Sie sendet nichts ins Internet und speichert nichts.
