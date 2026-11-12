@@ -275,6 +275,7 @@ class HeizungSchemaCard extends HTMLElement {
       .side { background: var(--ha-card-background, var(--card-background-color, #1e1e1e));
               border: var(--ha-card-border-width,1px) solid var(--ha-card-border-color, var(--divider-color));
               border-radius: var(--ha-card-border-radius, 16px); padding:8px 6px 10px; box-sizing:border-box; min-width:0; }
+      .side.outer { order:-1; } .side.inner { order:1; }
       .side h3 { margin:6px 6px 8px; font-size:12px; letter-spacing:.08em; font-weight:600;
                  color: var(--primary-text-color); text-transform:uppercase; }
       .row { display:flex; align-items:center; gap:8px; padding:6px 6px; border-radius:10px; cursor:pointer;
@@ -314,7 +315,7 @@ class HeizungSchemaCard extends HTMLElement {
       @media (max-width: 600px) { .wrap { grid-template-columns: 1fr; } }
     </style>
     <div class="wrap">
-      <div class="side"><h3>Inneneinheit</h3>${left}</div>
+      <div class="side inner"><h3>Inneneinheit</h3>${left}</div>
 
       <div class="center">
       <svg viewBox="0 0 1030 640" preserveAspectRatio="xMidYMid meet">
@@ -456,7 +457,7 @@ class HeizungSchemaCard extends HTMLElement {
       </svg>
       </div>
 
-      <div class="side"><h3>Außeneinheit</h3>
+      <div class="side outer"><h3>Außeneinheit</h3>
         <div class="row hl" data-entity="${e("comp_on")}">
           <ha-icon icon="mdi:cog" style="color:${compOn ? "#f5b83d" : "var(--disabled-text-color)"}"></ha-icon>
           <div class="txt"><div class="lbl">Verdichter</div><div class="val">${compOn ? "Ein" : "Aus"}</div></div>
