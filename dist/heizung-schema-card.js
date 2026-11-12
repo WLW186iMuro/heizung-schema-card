@@ -44,6 +44,11 @@ const HSC_DEFAULT_ENTITIES = {
   ta4: "sensor.boiler_hpta4",
   pan_heater: "binary_sensor.boiler_hpea0",
   aux_heater: "sensor.boiler_auxheaterstatus",
+  aux_level: "sensor.boiler_auxheaterlevel",
+  aux_step1: "switch.boiler_elheatstep1",
+  aux_step2: "switch.boiler_elheatstep2",
+  aux_step3: "switch.boiler_elheatstep3",
+  aux_energy: "sensor.boiler_metereheat",
   icing: "sensor.wp_vereisung_verdampfer",
   icing_status: "sensor.wp_vereisung_status",
   // nur für die Ersatzberechnung (Arbeitszahl, Primärkreis-Durchfluss)
@@ -169,14 +174,21 @@ class HeizungSchemaCard extends HTMLElement {
     const valve4 = this._isOn("hp4way");
     const dhwMode = /warm|dhw|brauch/i.test(activity);
     const dhwActive = valve3 || this._isOn("dhw_charging") || dhwMode;
-    const heatPath = compOn && !defrost && !dhwActive && (heating || /heiz/i.test(activity));
-    const tankPath = compOn && !defrost && dhwActive;
+    // E-Heizer (Heizstab 9 kW in der Inneneinheit, 3 Stufen à 3 kW): Stufen, Level (100 % = 9 kW), Zweck aus Zusatzheizerstatus
+    const aux = this._txt("aux_heater");
+    const auxLvl = this._num("aux_level");
+    const auxSteps = ["aux_step1", "aux_step2", "aux_step3"].filter((k) => this._isOn(k)).map((k) => k.slice(-1));
+    const auxOn = auxSteps.length > 0 || (auxLvl !== null && auxLvl > 0) || /heiz|warm/i.test(aux);
+    const auxKw = auxLvl !== null && auxLvl > 0 ? Math.round(auxLvl * 0.09) : auxSteps.length * 3;
+    const auxPurpose = /heiz/i.test(aux) ? "Heizen" : (/warm/i.test(aux) ? "Warmwasser" : "");
+    const auxTxt = auxOn ? [auxPurpose, auxKw + " kW", auxSteps.length ? "Stufe " + auxSteps.join("+") : ""].filter(Boolean).join(" · ") : "Aus";
+    const auxColor = auxOn ? "#ff5722" : "#9e9e9e";
+    const heatPath = (compOn || auxOn) && !defrost && !dhwActive && (heating || /heiz/i.test(activity) || /heiz/i.test(aux));
+    const tankPath = (compOn || auxOn) && !defrost && dhwActive;
     const spd = this._num("comp_speed") || 0;
     const spinDur = compOn && !defrost ? Math.max(0.6, 4 - spd / 30) : 0;
     const centerBg = this._config.center_background || "var(--secondary-background-color, #181818)";
     const sideW = parseInt(this._config.side_width, 10) || 190;
-    const aux = String(this._s("aux_heater") ? this._s("aux_heater").state : "aus");
-    const auxOn = !["aus", "off", "0", "unknown", "unavailable"].includes(aux.toLowerCase());
     const panOn = this._isOn("pan_heater");
     const fl = this._num("flow"), rt = this._num("ret");
     const spreadRaw = fl !== null && rt !== null ? (fl - rt).toLocaleString("de-DE", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + " K" : "–";
@@ -248,6 +260,8 @@ class HeizungSchemaCard extends HTMLElement {
       this._row("mdi:water-boiler", "Warmwasser Ist", this._fmt("dhw_actual"), "dhw_actual", "#42a5f5"),
       this._row("mdi:water-thermometer-outline", "Warmwasser Soll", this._fmt("dhw_set"), "dhw_set", "#42a5f5"),
       this._row("mdi:valve", "3-Wege-Ventil", valve3 ? "WW-Betrieb" : "Heizbetrieb", "valve3", "#9e9e9e"),
+      this._row("mdi:heating-coil", "E-Heizer (Heizstab)", auxTxt, "aux_heater", auxColor),
+      this._row("mdi:lightning-bolt", "E-Heizer Strom gesamt", this._fmt("aux_energy", 1), "aux_energy", "#ff5722"),
     ].join("");
 
     const right = [
@@ -265,7 +279,6 @@ class HeizungSchemaCard extends HTMLElement {
       this._row("mdi:snowflake-alert", "Vereisung Verdampfer", icingTxt, "icing", icingColor),
       this._row("mdi:swap-horizontal", "4-Wege-Ventil", valve4 ? "Abtauen" : "Normal", "hp4way", valve4 ? "#ffa726" : "#9e9e9e"),
       this._row("mdi:water-pump", "Wannenheizung", panOn ? "Ein" : "Aus", "pan_heater", "#9e9e9e"),
-      this._row("mdi:flash", "Zusatzheizung", auxOn ? "Ein" : "Aus", "aux_heater", "#9e9e9e"),
     ].join("");
 
     this.shadowRoot.innerHTML = `
@@ -304,6 +317,8 @@ class HeizungSchemaCard extends HTMLElement {
       .flow { stroke-dasharray:10 8; animation: hsc-dash 1.1s linear infinite; }
       @keyframes hsc-dash { to { stroke-dashoffset:-18; } }
       .dim { opacity:.3; }
+      .glow { filter: drop-shadow(0 0 4px #ff5722); animation: hsc-glow 1.6s ease-in-out infinite; }
+      @keyframes hsc-glow { 50% { opacity:.55; } }
       .click { cursor:pointer; }
       .spin { transform-box:fill-box; transform-origin:center; ${spinDur ? `animation: hsc-spin ${spinDur}s linear infinite;` : ""} }
       @keyframes hsc-spin { to { transform: rotate(360deg); } }
@@ -389,15 +404,20 @@ class HeizungSchemaCard extends HTMLElement {
         <text x="397" y="276" text-anchor="end" class="t-sub halo" font-size="12">TC0</text>
 
         <!-- Inneneinheit -->
-        <rect x="405" y="95" width="155" height="190" rx="14" class="box"/>
+        <rect x="405" y="95" width="155" height="190" rx="14" class="box" ${auxOn ? 'style="stroke:#ff5722;stroke-width:3"' : ""}/>
         <text x="482" y="125" text-anchor="middle" class="t-title">Inneneinheit</text>
         <text x="482" y="147" text-anchor="middle" class="t-sub" font-size="14">WLW 186i</text>
         <rect x="448" y="160" width="68" height="105" rx="4" fill="#15181b" stroke="#6b727b"/>
         <rect x="454" y="168" width="56" height="72" rx="2" fill="#2a2f35"/>
         <rect x="458" y="248" width="30" height="8" rx="2" fill="#9aa0a6" opacity=".6"/>
+        <!-- E-Heizer / Heizstab: glüht bei Betrieb, Leistung in kW -->
+        <g class="click" data-entity="${e("aux_heater")}"><title>E-Heizer (Heizstab 9 kW)</title>
+          <path d="M462 204 h6 l4 -10 l8 20 l8 -20 l8 20 l4 -10 h6" fill="none" stroke="${auxOn ? "#ff5722" : "#6b727b"}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" ${auxOn ? 'class="glow"' : ""}/>
+          <text x="482" y="232" text-anchor="middle" font-size="12" style="fill:${auxOn ? "#ff5722" : "var(--secondary-text-color)"};font-weight:700">${auxOn ? "⚡ " + auxKw + " kW" : "E-Heizer"}</text>
+        </g>
 
         <!-- Heizwasserkreis: Vorlauf Inneneinheit → Heizkreis, Rücklauf zurück -->
-        <path d="M560 160 H705" class="${cls(compOn && !defrost && (heatPath || tankPath), "red")}"/>
+        <path d="M560 160 H705" class="${cls(heatPath || tankPath, "red")}"/>
         <path d="M705 160 H850" class="${cls(heatPath, "red")}"/>
         <path d="M850 235 H640" class="${cls(heatPath, "blue")}"/>
         <path d="M640 235 H560" class="${cls(heatPath || tankPath, "blue")}"/>

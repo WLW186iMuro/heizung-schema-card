@@ -4,9 +4,10 @@
 
 Anlagenschema im Stil des Bosch-HMI-800 für die Luft-Wasser-Wärmepumpe **Buderus Logatherm WLW186i** (Bosch-Schwestermodell: Compress 5800i/6800i AW), ausgelesen über [EMS-ESP](https://emsesp.org).
 
-- links die Werte der Inneneinheit, rechts die der Außeneinheit, in der Mitte das Schema mit Kältemittelkreis, Heizkreis, Warmwasserspeicher
+- links die Werte der Außeneinheit, rechts die der Inneneinheit, in der Mitte das Schema mit Kältemittelkreis, Heizkreis, Warmwasserspeicher
 - Verdichter dreht sich nach Drehzahl, Leitungen zeigen die Fließrichtung, Abtauen (4-Wege-Ventil) und geschätzte Vereisung werden angezeigt
 - Spreizung und Durchfluss von Primär- und Heizkreis, im Warmwasserbetrieb passend ausgeblendet
+- E-Heizer (Heizstab) in der Inneneinheit: glüht bei Betrieb und zeigt die Leistung in kW. Die Leitungen laufen auch dann, wenn nur der Heizstab heizt. In der Spalte Inneneinheit stehen Zweck, Leistung, Stufe und der Stromverbrauch.
 - Farben folgen deinem Theme, ein Klick auf einen Wert öffnet die Entität
 
 ![Heizung Schema](docs/schema.png)
@@ -49,7 +50,9 @@ entities:                    # abweichende Entitäten, nur die nötigen angeben
 
 Heißt eine Entität bei dir anders, steht an der Stelle „–“. Dann in *Entwicklerwerkzeuge → Zustände* nach `boiler_` filtern und den Schlüssel unter `entities:` überschreiben.
 
-**Aus EMS-ESP (Standardnamen):** `outdoor`, `outdoor_damped` (`sensor.thermostat_dampedoutdoortemp`), `pressure`, `el_power`, `flow`, `ret`, `flow_rate`, `target_flow`, `dhw_actual`, `dhw_set`, `valve3`, `dhw_charging`, `heating_active`, `comp_on`, `comp_speed`, `activity`, `fan`, `tr1`, `ph1`, `tr3`, `tr6`, `hp4way`, `pc0flow`, `tc3`, `tc1`, `tc0`, `tl2`, `ta4`, `pan_heater`, `aux_heater`
+**Aus EMS-ESP (Standardnamen):** `outdoor`, `outdoor_damped` (`sensor.thermostat_dampedoutdoortemp`), `pressure`, `el_power`, `flow`, `ret`, `flow_rate`, `target_flow`, `dhw_actual`, `dhw_set`, `valve3`, `dhw_charging`, `heating_active`, `comp_on`, `comp_speed`, `activity`, `fan`, `tr1`, `ph1`, `tr3`, `tr6`, `hp4way`, `pc0flow`, `tc3`, `tc1`, `tc0`, `tl2`, `ta4`, `pan_heater`, `aux_heater`, `aux_level`, `aux_step1`, `aux_step2`, `aux_step3`, `aux_energy`
+
+Der E-Heizer ist auf einen Heizstab mit 9 kW in drei Stufen à 3 kW ausgelegt (WLW186i mit TP70). Die Leistung kommt aus `aux_level` (100 % = 9 kW), sonst aus den Stufenschaltern `aux_step1` bis `aux_step3`. Fehlen diese Entitäten, bleibt der E-Heizer auf „Aus“, solange `aux_heater` nicht „Heizen“ oder „Warmwasser“ meldet.
 
 **Rechnet die Karte selbst, wenn die Entität fehlt** (nichts anzulegen):
 
