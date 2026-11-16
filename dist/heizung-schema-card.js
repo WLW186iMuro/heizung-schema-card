@@ -8,6 +8,14 @@
  *
  * Ersatzwerte: Fehlen die Entitäten heat_power, cop oder pc0flow_calc, berechnet die Karte sie selbst aus den
  * EMS-ESP-Standardentitäten. Ohne Entität bleiben icing/icing_status ("Aus") und pv_status (Feld ausgeblendet).
+ *
+ * v1.1.0 – optionale eigene Fühler (z. B. DS18B20/Dallas am EMS-ESP-Gateway):
+ *   entities:
+ *     hk_flow_ext: sensor.xyz   # Vorlauf Heizkreis direkt am Rohr
+ *     hk_ret_ext: sensor.xyz    # Rücklauf Heizkreis (vor dem Puffer)
+ *     dhw_out: sensor.xyz       # Warmwasser-Austritt am Speicher (Zeile erscheint nur, wenn eingetragen)
+ *   Nicht eingetragen oder gerade ohne Wert → die Karte nimmt wie bisher flow/ret (EMS). Hinter Vor- und
+ *   Rücklauf steht, woher der Wert kommt ("Fühler" oder "EMS"); Spreizung und Heizleistung folgen derselben Quelle.
  */
 const HSC_DEFAULT_ENTITIES = {
   outdoor: "sensor.boiler_outdoortemp",
@@ -57,6 +65,10 @@ const HSC_DEFAULT_ENTITIES = {
   nrg_heat: "sensor.boiler_nrgheat",
   meter_heat: "sensor.boiler_meterheat",
   circ_spd: "sensor.boiler_hpcircspd",
+  // optionale eigene Fühler – leer = EMS-Werte (flow/ret) verwenden
+  hk_flow_ext: "",
+  hk_ret_ext: "",
+  dhw_out: "",
 };
 
 const HSC_PV_TEXT = {
@@ -89,7 +101,25 @@ class HeizungSchemaCard extends HTMLElement {
   getGridOptions() { return { columns: "full", min_columns: 12 }; }
   static getStubConfig() { return {}; }
 
-  _s(key) { return this._hass.states[this._ent[key]]; }
+  _s(key) { return this._ent[key] ? this._hass.states[this._ent[key]] : undefined; }
+  _has(key) {
+    const s = this._s(key);
+    return !!s && !isNaN(parseFloat(s.state));
+  }
+  /* Heizkreis Vor-/Rücklauf: eigener Fühler, wenn eingetragen und mit gültigem Wert, sonst EMS-Wert.
+   * Sind beide Fühler eingetragen, gelten sie nur gemeinsam – fällt einer aus, nehmen beide den EMS-Wert,
+   * damit die Spreizung nie aus zwei verschiedenen Messstellen gemischt wird. */
+  _hk(kind) {
+    const ext = kind === "flow" ? "hk_flow_ext" : "hk_ret_ext";
+    const other = kind === "flow" ? "hk_ret_ext" : "hk_flow_ext";
+    if (!this._has(ext)) return kind;
+    if (this._ent[other] && !this._has(other)) return kind;
+    return ext;
+  }
+  _src(kind) {
+    if (this._hk(kind) !== kind) return "Fühler";
+    return this._ent[kind === "flow" ? "hk_flow_ext" : "hk_ret_ext"] ? "EMS (Fühler ausgefallen)" : "EMS";
+  }
   _num(key) {
     const s = this._s(key);
     const v = s ? parseFloat(s.state) : NaN;
@@ -107,7 +137,7 @@ class HeizungSchemaCard extends HTMLElement {
     if (key === "heat_power") {
       const a = this._s("activity");
       if (!a || !/heiz|heating/i.test(a.state)) return { v: 0, unit: "kW" };
-      const q = g("flow_rate"), vl = g("flow"), rl = g("ret");
+      const q = g("flow_rate"), vl = g(this._hk("flow")), rl = g(this._hk("ret"));
       return q === null || vl === null || rl === null ? null : { v: (q * 1.163 * (vl - rl)) / 1000, unit: "kW" };
     }
     if (key === "cop") {
@@ -190,7 +220,8 @@ class HeizungSchemaCard extends HTMLElement {
     const centerBg = this._config.center_background || "var(--secondary-background-color, #181818)";
     const sideW = parseInt(this._config.side_width, 10) || 190;
     const panOn = this._isOn("pan_heater");
-    const fl = this._num("flow"), rt = this._num("ret");
+    const hkF = this._hk("flow"), hkR = this._hk("ret");
+    const fl = this._num(hkF), rt = this._num(hkR);
     const spreadRaw = fl !== null && rt !== null ? (fl - rt).toLocaleString("de-DE", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + " K" : "–";
     // Im WW-Betrieb ist der Heizkreis abgekoppelt (Rücklauf bleibt bei Fußbodenkreis-Temperatur) – Spreizung/Durchfluss nicht aussagekräftig
     const wwHint = "– (WW-Betrieb)";
@@ -250,12 +281,13 @@ class HeizungSchemaCard extends HTMLElement {
       this._row("mdi:radiator", "Heizleistung", this._fmt("heat_power", 2), "heat_power", "#ffa726"),
       this._row("mdi:flash", "Stromaufnahme", this._fmt("el_power", 0), "el_power", "#fdd835"),
       this._row("mdi:chart-line", "Arbeitszahl gesamt", this._fmt("cop", 2, ""), "cop", "#4cc38a"),
-      this._row("mdi:thermometer-chevron-up", "Heizkreis Vorlauf", this._fmt("flow"), "flow", "#ef5350"),
-      this._row("mdi:thermometer-chevron-down", "Heizkreis Rücklauf", this._fmt("ret"), "ret", "#42a5f5"),
-      this._row("mdi:arrow-expand-vertical", "Spreizung Heizkreis (VL – RL)", spread, "flow", dhwActive ? "#9e9e9e" : "#ffa726"),
+      this._row("mdi:thermometer-chevron-up", `Heizkreis Vorlauf · ${this._src("flow")}`, this._fmt(hkF), hkF, "#ef5350"),
+      this._row("mdi:thermometer-chevron-down", `Heizkreis Rücklauf · ${this._src("ret")}`, this._fmt(hkR), hkR, "#42a5f5"),
+      this._row("mdi:arrow-expand-vertical", "Spreizung Heizkreis (VL – RL)", spread, hkF, dhwActive ? "#9e9e9e" : "#ffa726"),
       this._row("mdi:water-sync", "Durchfluss Heizwasser", flowHK, "flow_rate", dhwActive ? "#9e9e9e" : "#26c6da"),
       this._row("mdi:thermometer-lines", "HK1 Soll-Vorlauf", this._fmt("target_flow"), "target_flow", "#ef5350"),
       this._row("mdi:water-boiler", "Warmwasser Ist", this._fmt("dhw_actual"), "dhw_actual", "#42a5f5"),
+      this._ent.dhw_out ? this._row("mdi:water-thermometer", "Warmwasser Ausgang · Fühler", this._fmt("dhw_out"), "dhw_out", "#ef5350") : "",
       this._row("mdi:water-thermometer-outline", "Warmwasser Soll", this._fmt("dhw_set"), "dhw_set", "#42a5f5"),
       this._row("mdi:valve", "3-Wege-Ventil", valve3 ? "WW-Betrieb" : "Heizbetrieb", "valve3", "#9e9e9e"),
       this._row("mdi:heating-coil", "E-Heizer (Heizstab)", auxTxt, "aux_heater", auxColor),
@@ -421,9 +453,9 @@ class HeizungSchemaCard extends HTMLElement {
         <path d="M705 160 H850" class="${cls(heatPath, "red")}"/>
         <path d="M850 235 H640" class="${cls(heatPath, "blue")}"/>
         <path d="M640 235 H560" class="${cls(heatPath || tankPath, "blue")}"/>
-        <g class="click" data-entity="${e("flow")}"><text x="575" y="148" class="t-vl halo">${this._fmt("flow")}</text></g>
-        <g class="click" data-entity="${e("ret")}"><text x="575" y="262" class="t-rl halo">${this._fmt("ret")}</text></g>
-        <g class="click" data-entity="${e("flow")}"><text x="788" y="206" text-anchor="middle" class="t-sub halo" font-size="13">VL − RL <tspan style="fill:var(--primary-text-color);font-weight:700">${spreadShort}</tspan></text></g>
+        <g class="click" data-entity="${e(hkF)}"><text x="575" y="148" class="t-vl halo">${this._fmt(hkF)}</text></g>
+        <g class="click" data-entity="${e(hkR)}"><text x="575" y="262" class="t-rl halo">${this._fmt(hkR)}</text></g>
+        <g class="click" data-entity="${e(hkF)}"><text x="788" y="206" text-anchor="middle" class="t-sub halo" font-size="13">VL − RL <tspan style="fill:var(--primary-text-color);font-weight:700">${spreadShort}</tspan></text></g>
         <g class="click" data-entity="${e("flow_rate")}"><text x="788" y="224" text-anchor="middle" class="t-sub halo" font-size="13">Durchfluss <tspan style="fill:var(--primary-text-color);font-weight:700">${flowHKshort}</tspan></text></g>
 
         <g class="click" data-entity="${e("valve3")}">

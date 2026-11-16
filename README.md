@@ -64,6 +64,23 @@ Der E-Heizer ist auf einen Heizstab mit 9 kW in drei Stufen à 3 kW ausgelegt (W
 
 Die Kennlinie der Primärkreispumpe wurde an einer WLW186i-7 mit TP70 ermittelt. Bei anderen Größen ist der „≈“-Wert nur eine Näherung.
 
+## Eigene Fühler (optional)
+
+Bei der WLW186i mit TP70 misst EMS-ESP den Rücklauf zur Wärmepumpe (praktisch TC0), nicht den Rücklauf der Fußbodenheizung. Wer eigene Anlegefühler hat, zum Beispiel DS18B20 (Dallas) am EMS-ESP-Gateway, trägt sie so ein:
+
+```yaml
+type: custom:heizung-schema-card
+entities:
+  hk_flow_ext: sensor.temperaturesensor_28_xxxx   # Vorlauf Heizkreis am Rohr
+  hk_ret_ext: sensor.temperaturesensor_28_yyyy    # Rücklauf Heizkreis vor dem Puffer
+  dhw_out: sensor.temperaturesensor_28_zzzz       # Warmwasser-Austritt am Speicher
+```
+
+- Ohne Eintrag zeigt die Karte wie bisher die EMS-Werte `flow` und `ret`.
+- Hinter Vor- und Rücklauf steht, woher der Wert kommt: „Fühler“ oder „EMS“. Spreizung und berechnete Heizleistung nutzen dieselbe Quelle.
+- Sind beide Heizkreis-Fühler eingetragen und hat einer gerade keinen Wert, nehmen beide die EMS-Werte („EMS (Fühler ausgefallen)“). So wird die Spreizung nie aus zwei verschiedenen Messstellen gemischt.
+- Die Zeile „Warmwasser Ausgang“ erscheint nur, wenn `dhw_out` eingetragen ist.
+
 **Optional, ohne Ersatz:** `icing` und `icing_status` (geschätzte Vereisung des Verdampfers; ohne Entität zeigt die Karte „Aus“) und `pv_status` (Status einer PV-Überschuss-Steuerung; ohne Entität ist das Feld ausgeblendet).
 
 ## Datenschutz
