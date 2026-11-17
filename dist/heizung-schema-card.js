@@ -9,6 +9,7 @@
  * Ersatzwerte: Fehlen die Entitäten heat_power, cop oder pc0flow_calc, berechnet die Karte sie selbst aus den
  * EMS-ESP-Standardentitäten. Ohne Entität bleiben icing/icing_status ("Aus") und pv_status (Feld ausgeblendet).
  *
+ * v1.1.1 – PC0-Kennlinie unter 41 % Drehzahl: proportional statt 610 + 6,2 × % (die alte Gerade lag dort bis zu ~50 % zu hoch).
  * v1.1.0 – optionale eigene Fühler (z. B. DS18B20/Dallas am EMS-ESP-Gateway):
  *   entities:
  *     hk_flow_ext: sensor.xyz   # Vorlauf Heizkreis direkt am Rohr
@@ -147,12 +148,15 @@ class HeizungSchemaCard extends HTMLElement {
       return { v: w / e, unit: "" };
     }
     if (key === "pc0flow_calc") {
-      // Kennlinie der Primärkreispumpe aus der Pumpendrehzahl (an einer WLW186i-7 mit TP70 ermittelt)
+      // Kennlinie der Primärkreispumpe aus der Pumpendrehzahl (an einer WLW186i-7 mit TP70 ermittelt).
+      // Heizen unter 41 %: proportional 21,08 × % (vorläufig aus der Wärmebilanz bei 25–36 %, ±15 %, stetig an 865 l/h bei 41 %),
+      // 41–50 %: 610 + 6,2 × %, ab 50 %: max(126 + 15,9 × %, −486 + 23,9 × %).
       const sp = g("circ_spd");
       if (sp === null) return null;
       if (sp <= 0) return { v: 0, unit: "L/h" };
       const f = this._isOn("valve3")
         ? Math.max(0, -78 + 17.5 * sp, -583 + 23.9 * sp)
+        : sp < 41 ? ((610 + 6.2 * 41) / 41) * sp
         : sp < 50 ? 610 + 6.2 * sp : Math.max(126 + 15.9 * sp, -486 + 23.9 * sp);
       return { v: Math.round(f), unit: "L/h" };
     }
