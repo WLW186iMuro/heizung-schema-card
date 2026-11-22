@@ -9,6 +9,8 @@
  * Ersatzwerte: Fehlen die Entitäten heat_power, cop oder pc0flow_calc, berechnet die Karte sie selbst aus den
  * EMS-ESP-Standardentitäten. Ohne Entität bleiben icing/icing_status ("Aus") und pv_status (Feld ausgeblendet).
  *
+ * v1.1.2 – PC0-Kennlinie im Heizbetrieb durchgehend linear: max(126 + 15,9 × %, −486 + 23,9 × %) für alle Drehzahlen
+ *   (41 % ≈ 778 l/h statt 865, 35 % ≈ 682 l/h statt 738). Bestätigt durch pc0flow-Messwerte 46–80 % und die Wärmebilanz.
  * v1.1.1 – PC0-Kennlinie unter 41 % Drehzahl: proportional statt 610 + 6,2 × % (die alte Gerade lag dort bis zu ~50 % zu hoch).
  * v1.1.0 – optionale eigene Fühler (z. B. DS18B20/Dallas am EMS-ESP-Gateway):
  *   entities:
@@ -149,15 +151,15 @@ class HeizungSchemaCard extends HTMLElement {
     }
     if (key === "pc0flow_calc") {
       // Kennlinie der Primärkreispumpe aus der Pumpendrehzahl (an einer WLW186i-7 mit TP70 ermittelt).
-      // Heizen unter 41 %: proportional 21,08 × % (vorläufig aus der Wärmebilanz bei 25–36 %, ±15 %, stetig an 865 l/h bei 41 %),
-      // 41–50 %: 610 + 6,2 × %, ab 50 %: max(126 + 15,9 × %, −486 + 23,9 × %).
+      // Heizen (alle Drehzahlen, Stand 22.11.2026): max(126 + 15,9 × %, −486 + 23,9 × %), Knick bei ca. 77 %;
+      // bestätigt durch pc0flow-Messwerte im Heizbetrieb 46–80 % und die Wärmebilanz (41 % ≈ 770 l/h, 35 % ≈ 650 l/h).
+      // Warmwasser: max(−78 + 17,5 × %, −583 + 23,9 × %); dort fließt bei gleicher Drehzahl ca. 10 % weniger (Speicherwendel).
       const sp = g("circ_spd");
       if (sp === null) return null;
       if (sp <= 0) return { v: 0, unit: "L/h" };
       const f = this._isOn("valve3")
         ? Math.max(0, -78 + 17.5 * sp, -583 + 23.9 * sp)
-        : sp < 41 ? ((610 + 6.2 * 41) / 41) * sp
-        : sp < 50 ? 610 + 6.2 * sp : Math.max(126 + 15.9 * sp, -486 + 23.9 * sp);
+        : Math.max(126 + 15.9 * sp, -486 + 23.9 * sp);
       return { v: Math.round(f), unit: "L/h" };
     }
     return null;

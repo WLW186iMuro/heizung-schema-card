@@ -62,7 +62,7 @@ Der E-Heizer ist auf einen Heizstab mit 9 kW in drei Stufen à 3 kW ausgelegt (W
 | `cop` | Arbeitszahl gesamt | Wärmemenge ÷ Strom aus `boiler_nrgtotal` / `boiler_metertotal` |
 | `pc0flow_calc` | Durchfluss Kältemittel, mit „≈“ | Kennlinie der Primärkreispumpe aus `boiler_hpcircspd` |
 
-Die Kennlinie der Primärkreispumpe wurde an einer WLW186i-7 mit TP70 ermittelt. Unter 41 % Pumpendrehzahl ist sie vorläufig (aus der Wärmebilanz des Heizkreises abgeleitet, ca. ±15 %). Bei anderen Größen ist der „≈“-Wert nur eine Näherung.
+Die Kennlinie der Primärkreispumpe wurde an einer WLW186i-7 mit TP70 ermittelt. Im Heizbetrieb gilt seit v1.1.2 eine durchgehende Gerade, max(126 + 15,9 × %, −486 + 23,9 × %), bestätigt durch Messwerte von `pc0flow` (46–80 %) und die Wärmebilanz der Wärmepumpe (Abweichung bei 35–41 % ca. ±5 %). Bei anderen Größen ist der „≈“-Wert nur eine Näherung.
 
 ## Eigene Fühler (optional)
 
